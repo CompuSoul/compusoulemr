@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compusoul EMR | Comprehensive Suite</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        /* --- THEME --- */
+        :root {
+            --primary: #2c3e50; --secondary: #3498db; --accent: #16a085;
+            --zoom: #2D8CFF; --bg-light: #f4f7f6; --text: #333;
+            --doc: #2980b9; --therapist: #27ae60;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; height: 100vh; display: flex;
+            background-color: var(--bg-light); color: var(--text); overflow: hidden;
+        }
+
+        /* --- LOGIN --- */
+        #login-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--primary); z-index: 10000;
+            display: flex; justify-content: center; align-items: center;
+            flex-direction: column; color: white;
+        }
+        .login-box {
+            background: white; padding: 40px; border-radius: 8px; width: 350px;
+            text-align: center; color: #333; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 280px; background-color: var(--primary); color: white;
+            display: flex; flex-direction: column; padding: 20px; flex-shrink: 0; overflow-y: auto;
+        }
+        .brand { font-size: 1.5rem; font-weight: bold; margin-bottom: 30px; color: var(--secondary); text-transform: uppercase; border-bottom: 1px solid #444; padding-bottom: 20px;}
+        .nav-category { font-size: 0.75rem; text-transform: uppercase; color: #888; margin-top: 15px; margin-bottom: 5px; font-weight: bold; }
+        .nav-item {
+            padding: 12px 15px; cursor: pointer; border-radius: 6px; margin-bottom: 4px; font-size: 0.95rem;
+            display: flex; align-items: center; justify-content: space-between; transition: background 0.2s;
+        }
+        .nav-item:hover { background-color: rgba(255,255,255,0.1); }
+        .nav-item.active { background-color: var(--secondary); font-weight: 600; }
+
+        /* --- MAIN AREA --- */
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; }
+        
+        .patient-banner {
+            background: #2c3e50; color: white; padding: 10px 20px; border-radius: 6px;
+            font-size: 0.9rem; display: none; gap: 20px; align-items: center; margin-bottom: 20px;
+        }
+        .patient-banner.active { display: flex; animation: slideDown 0.3s; }
+        @keyframes slideDown { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* --- MODULES --- */
+        .module { display: none; }
+        .module.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card {
+            background: white; padding: 25px; border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px; border-top: 4px solid var(--secondary);
+        }
+        .card h3 { margin-top: 0; color: var(--primary); border-bottom: 1px solid #eee; padding-bottom: 10px; }
+
+        /* --- FORMS --- */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+        .full-width { grid-column: span 2; }
+        .full-width-3 { grid-column: span 3; }
+
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.85rem; color: #555; }
+        input, select, textarea {
+            width: 100%; padding: 10px; border: 1px solid #ccc;
+            border-radius: 4px; font-size: 0.95rem; box-sizing: border-box; font-family: inherit;
+        }
+        .section-title {
+            background: #eef2f5; padding: 8px 15px; font-weight: bold; color: var(--primary);
+            margin: 20px 0 15px 0; border-left: 4px solid var(--accent);
+        }
+        .checkbox-group { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 5px; }
+        .checkbox-item { display: flex; align-items: center; gap: 5px; font-size: 0.9rem; }
+        .checkbox-item input { width: auto; }
+
+        /* --- TABS WITHIN MODULES (SUB-TABS) --- */
+        .sub-tabs { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 20px; }
+        .sub-tab { padding: 10px 20px; cursor: pointer; color: #666; font-weight: bold; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+        .sub-tab:hover { color: var(--secondary); }
+        .sub-tab.active { color: var(--secondary); border-bottom-color: var(--secondary); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s; }
+
+        /* --- BUTTONS --- */
+        .btn { padding: 10px 20px; background-color: var(--secondary); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; font-weight: 600; }
+        .btn:hover { background-color: #2980b9; }
+        .btn-zoom { background-color: var(--zoom); width: 100%; margin-top: 5px; font-size: 0.8rem; }
+        .btn-upload { background-color: #95a5a6; display: flex; align-items: center; gap: 5px; justify-content: center; }
+        
+        /* --- CALENDAR --- */
+        .cal-nav { display: flex; justify-content: space-between; align-items: center; background: #eef2f5; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
+        .calendar-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; font-weight: bold; color: #555; margin-bottom: 5px; }
+        .calendar-month { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+        .day-cell { background: #fff; border: 1px solid #e0e0e0; min-height: 120px; padding: 5px; position: relative; }
+        .day-number { font-weight: bold; font-size: 0.9rem; margin-bottom: 5px; color: #777; }
+        .empty-cell { background: #f4f7f6; border: none; }
+        .today { background-color: #e8f6ff; border: 2px solid var(--secondary); }
+        .appt-pill { padding: 4px 6px; margin-bottom: 4px; border-radius: 4px; font-size: 0.75rem; color: white; cursor: pointer; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .pill-doc { background-color: var(--doc); }
+        .pill-therapist { background-color: var(--therapist); }
+        .pill-zoom { border-right: 5px solid var(--zoom); }
+
+        /* --- NOTES --- */
+        .note-entry { border-left: 4px solid var(--secondary); background: #fafafa; padding: 15px; margin-bottom: 15px; }
+        .note-meta { font-size: 0.8rem; color: #888; font-weight: bold; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+    <div id="login-overlay">
+        <div class="login-box">
+            <h2>Compusoul EMR</h2>
+            <p>Secure HIPAA Login</p>
+            <input type="password" id="password-input" placeholder="Enter Password (admin)" 
+                   style="margin-bottom: 15px;" onkeydown="if(event.key==='Enter') attemptLogin()">
+            <button class="btn" style="width:100%" onclick="attemptLogin()">Access System</button>
+            <p id="login-error" style="color: #ff6b6b; display: none; margin-top:10px;">Access Denied</p>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <div class="brand">Compusoul</div>
+        
+        <div class="nav-category">Main</div>
+        <div class="nav-item active" onclick="switchTab('dashboard', this)">Dashboard</div>
+        <div class="nav-item" onclick="switchTab('schedule', this)">Full Calendar</div>
+        
+        <div class="nav-category">Clinical Workflow</div>
+        <div class="nav-item" onclick="switchTab('intake', this)">1. Deep-Dive Intake</div>
+        <div class="nav-item" onclick="switchTab('cca', this)">2. Assessment (CCA)</div>
+        <div class="nav-item" onclick="switchTab('locus', this)">3. LOCUS Calculator</div>
+        <div class="nav-item" onclick="switchTab('pcp', this)">4. Treatment Plan (PCP)</div>
+        <div class="nav-item" onclick="switchTab('notes', this)">5. Progress Notes</div>
+        
+        <div class="nav-category">Admin</div>
+        <div class="nav-item" onclick="location.reload()">Logout</div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h2 id="page-title">Dashboard</h2>
+            <div><strong>Dr. Smith</strong> (Clinical Director)</div>
+        </div>
+
+        <div id="pt-banner" class="patient-banner">
+            <strong>Active Patient:</strong> <span class="auto-name">Jane Doe</span>
+            | <strong>DOB:</strong> <span class="auto-dob">01/01/1980</span>
+            | <strong>Payor:</strong> <span class="auto-payor">Medicaid</span>
+        </div>
+
+        <div id="dashboard" class="module active">
+            <div class="form-grid">
+                <div class="card">
+                    <h3>Appointments Today</h3>
+                    <div style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">
+                        <span style="display:inline-block; width:10px; height:10px; background:var(--doc); border-radius:50%;"></span> MD/DO
+                        <span style="display:inline-block; width:10px; height:10px; background:var(--therapist); border-radius:50%; margin-left:10px;"></span> Therapist
+                    </div>
+                    <div style="padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between;">
+                        <div><strong style="color:var(--doc)">09:00 AM</strong> - J. Doe (Intake)</div>
+                        <div style="font-size:0.8rem; background: #eee; padding: 2px 6px; border-radius: 4px;">Dr. Smith</div>
+                    </div>
+                    <div style="padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between;">
+                        <div><strong style="color:var(--therapist)">10:00 AM</strong> - M. Ross (Therapy)</div>
+                        <button class="btn btn-zoom" style="width:auto; margin:0; padding: 5px 10px;" onclick="startZoom()">Join</button>
+                    </div>
+                    <br>
+                    <button class="btn" onclick="switchTab('schedule', document.querySelectorAll('.nav-item')[1])">Open Full Calendar</button>
+                </div>
+
+                <div class="card full-width">
+                    <h3>Caseload Stats</h3>
+                    <div style="height: 250px;"><canvas id="progressChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="intake" class="module">
+            <div class="card">
+                <h3>1. Comprehensive Intake & Registration</h3>
+                
+                <div class="section-title">I. Patient Demographics</div>
+                <div class="form-grid grid-3">
+                    <div><label>First Name</label><input type="text" id="pt_first" placeholder="Jane"></div>
+                    <div><label>Middle</label><input type="text" id="pt_middle"></div>
+                    <div><label>Last Name</label><input type="text" id="pt_last" placeholder="Doe"></div>
+                    <div><label>Date of Birth</label><input type="date" id="pt_dob"></div>
+                    <div><label>Gender Identity</label><select><option>Male</option><option>Female</option><option>Non-Binary</option><option>Transgender</option></select></div>
+                    <div><label>Marital Status</label><select><option>Single</option><option>Married</option><option>Divorced</option><option>Widowed</option></select></div>
+                </div>
+
+                <div class="section-title">II. Contact & Employment</div>
+                <div class="form-grid">
+                    <div class="full-width"><label>Street Address</label><input type="text" placeholder="123 Maple Ave"></div>
+                    <div><label>Phone</label><input type="tel"></div>
+                    <div><label>Email</label><input type="email"></div>
+                    <div><label>Employment Status</label><select><option>Full Time</option><option>Part Time</option><option>Unemployed</option><option>Student</option><option>Disabled</option></select></div>
+                    <div><label>Employer</label><input type="text"></div>
+                </div>
+
+                <div class="section-title">III. Emergency Contact & PCP</div>
+                <div class="form-grid">
+                    <div><label>Emergency Contact Name</label><input type="text"></div>
+                    <div><label>Relationship</label><input type="text" placeholder="e.g. Spouse"></div>
+                    <div><label>Phone</label><input type="tel"></div>
+                    <div><label>Primary Care Physician (PCP)</label><input type="text" placeholder="Dr. Name"></div>
+                </div>
+
+                <div class="section-title">IV. Insurance & Billing</div>
+                <div class="form-grid">
+                    <div><label>Primary Payor</label><select id="pt_payor"><option>NC Medicaid</option><option>Blue Cross</option><option>Self-Pay</option><option>Medicare</option></select></div>
+                    <div><label>Member ID / Policy #</label><input type="text"></div>
+                    <div><label>Group Number</label><input type="text"></div>
+                    <div><label>Subscriber Name</label><input type="text" placeholder="If different from patient"></div>
+                    <div><label>Relationship to Subscriber</label><select><option>Self</option><option>Spouse</option><option>Child</option></select></div>
+                    <div>
+                        <label>Insurance Card</label>
+                        <button class="btn btn-upload" onclick="alert('File Upload Dialog would open here.')">
+                            <span>📷</span> Upload Card Scan
+                        </button>
+                    </div>
+                </div>
+
+                <br><button class="btn" onclick="saveIntake()">Save & Generate Banner</button>
+            </div>
+        </div>
+
+        <div id="cca" class="module">
+            <div class="card">
+                <h3>2. Comprehensive Clinical Assessment (CCA)</h3>
+                
+                <div class="sub-tabs">
+                    <div class="sub-tab active" onclick="switchSubTab('cca-1', this)">1. Presenting & History</div>
+                    <div class="sub-tab" onclick="switchSubTab('cca-2', this)">2. Social & Legal</div>
+                    <div class="sub-tab" onclick="switchSubTab('cca-3', this)">3. Trauma & Risk</div>
+                    <div class="sub-tab" onclick="switchSubTab('cca-4', this)">4. Diagnosis</div>
+                </div>
+
+                <div id="cca-1" class="tab-content active">
+                    <div class="section-title">Presenting Problem</div>
+                    <textarea rows="3" placeholder="Chief Complaint: Why are they here? Duration of symptoms?"></textarea>
+                    
+                    <div class="section-title">Medical & Psychiatric History</div>
+                    <div class="form-grid">
+                        <div class="full-width"><label>Medical Conditions</label><textarea rows="2" placeholder="Diabetes, Hypertension, etc."></textarea></div>
+                        <div class="full-width"><label>Current Medications</label><textarea rows="2" placeholder="Name, Dosage, Frequency"></textarea></div>
+                        <div class="full-width"><label>Family Psychiatric History</label><textarea rows="2" placeholder="History of depression, substance use in family?"></textarea></div>
+                    </div>
+                </div>
+
+                <div id="cca-2" class="tab-content">
+                    <div class="section-title">Social History</div>
+                    <div class="form-grid">
+                        <div class="full-width"><label>Developmental History</label><textarea rows="2" placeholder="Birth complications? Milestones met? School issues?"></textarea></div>
+                        <div><label>Education Level</label><select><option>High School</option><option>GED</option><option>Some College</option><option>Degree</option></select></div>
+                        <div><label>Living Situation</label><select><option>Stable Housing</option><option>Homeless</option><option>Shelter</option><option>With Family</option></select></div>
+                        <div class="full-width"><label>Spiritual/Cultural Factors</label><textarea rows="1"></textarea></div>
+                    </div>
+
+                    <div class="section-title">Legal History</div>
+                    <div class="form-grid">
+                        <div><label>Legal Status</label><select><option>No Legal Issues</option><option>Probation</option><option>Parole</option><option>Pending Charges</option></select></div>
+                        <div><label>History of Arrests?</label><select><option>No</option><option>Yes</option></select></div>
+                        <div class="full-width"><label>Details of Legal History</label><textarea rows="2"></textarea></div>
+                    </div>
+                </div>
+
+                <div id="cca-3" class="tab-content">
+                    <div class="section-title">Trauma History</div>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item"><input type="checkbox"> Emotional Abuse</div>
+                        <div class="checkbox-item"><input type="checkbox"> Physical Abuse</div>
+                        <div class="checkbox-item"><input type="checkbox"> Sexual Abuse</div>
+                        <div class="checkbox-item"><input type="checkbox"> Neglect</div>
+                        <div class="checkbox-item"><input type="checkbox"> Witnessed Violence</div>
+                        <div class="checkbox-item"><input type="checkbox"> Combat/War</div>
+                    </div>
+
+                    <div class="section-title">Risk Assessment</div>
+                    <div class="form-grid">
+                        <div><label>Suicidal Ideation</label><select><option>None</option><option>Passive</option><option>Active w/o Plan</option><option>Active w/ Plan</option></select></div>
+                        <div><label>Homicidal Ideation</label><select><option>None</option><option>Present</option></select></div>
+                        <div><label>Self-Injurious Behavior</label><select><option>None</option><option>Cutting/Burning</option><option>Head Banging</option></select></div>
+                    </div>
+                </div>
+
+                <div id="cca-4" class="tab-content">
+                    <div class="section-title">Mental Status Exam (MSE)</div>
+                    <div class="form-grid grid-3">
+                        <div><label>Appearance</label><select><option>Appropriate</option><option>Disheveled</option></select></div>
+                        <div><label>Affect</label><select><option>Full Range</option><option>Flat</option><option>Labile</option></select></div>
+                        <div><label>Mood</label><select><option>Euthymic</option><option>Depressed</option><option>Anxious</option></select></div>
+                        <div><label>Thought Process</label><select><option>Logical/Linear</option><option>Flight of Ideas</option><option>Tangential</option></select></div>
+                        <div><label>Judgment</label><select><option>Good</option><option>Fair</option><option>Poor</option></select></div>
+                        <div><label>Insight</label><select><option>Good</option><option>Fair</option><option>Poor</option></select></div>
+                    </div>
+
+                    <div class="section-title">Diagnosis (ICD-10)</div>
+                    <div class="full-width"><label>Primary Diagnosis</label><select><option value="">Select...</option><option>F33.1 - Major Depressive Disorder</option><option>F41.1 - Generalized Anxiety Disorder</option><option>F43.10 - PTSD</option><option>F90.2 - ADHD</option></select></div>
+                    <br>
+                    <button class="btn" onclick="alert('Full CCA Saved & Locked!')">Finalize Assessment</button>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="locus" class="module">
+            <div class="card">
+                <h3>3. LOCUS / CALOCUS Calculator</h3>
+                <div class="form-grid grid-3" style="background: #f9f9f9; padding: 15px; border-radius: 8px;">
+                    <div><label>Risk of Harm</label><select class="locus-in" onchange="calcLocus()"><option value="1">1</option><option value="3">3</option><option value="5">5</option></select></div>
+                    <div><label>Functional Status</label><select class="locus-in" onchange="calcLocus()"><option value="1">1</option><option value="3">3</option><option value="5">5</option></select></div>
+                    <div><label>Co-Morbidity</label><select class="locus-in" onchange="calcLocus()"><option value="1">1</option><option value="3">3</option></select></div>
+                    <div><label>Recovery Env.</label><select class="locus-in" onchange="calcLocus()"><option value="1">1</option><option value="3">3</option></select></div>
+                    <div><label>Tx History</label><select class="locus-in" onchange="calcLocus()"><option value="1">1</option><option value="3">3</option></select></div>
+                    <div><label>Engagement</label><select class="locus-in" onchange="calcLocus()"><option value="1">1</option><option value="3">3</option></select></div>
+                </div>
+                <div style="margin-top: 20px;">Composite Score: <strong id="locus-score">6</strong></div>
+            </div>
+        </div>
+
+        <div id="pcp" class="module">
+            <div class="card">
+                <h3>4. Person Centered Plan (PCP)</h3>
+                <div class="full-width"><label>Long Term Goal</label><textarea rows="2"></textarea></div>
+                <div class="form-grid">
+                    <div><label>Provider Sig</label><div style="border: 1px solid #ccc;"><canvas id="sig-pad-1" width="300" height="100"></canvas></div><button class="btn" style="background:#999; font-size:0.7rem;" onclick="clearSig('sig-pad-1')">Clear</button></div>
+                    <div><label>Patient Sig</label><div style="border: 1px solid #ccc;"><canvas id="sig-pad-2" width="300" height="100"></canvas></div><button class="btn" style="background:#999; font-size:0.7rem;" onclick="clearSig('sig-pad-2')">Clear</button></div>
+                </div>
+                <br><button class="btn" onclick="alert('PCP Active & Locked')">Activate Plan</button>
+            </div>
+        </div>
+
+        <div id="notes" class="module">
+            <div class="card">
+                <h3>5. Clinical Progress Note</h3>
+                <div class="form-grid grid-3">
+                    <div><label>Date</label><input type="date" id="note_date"></div>
+                    <div><label>Code</label><select id="note_cpt"><option>90837</option><option>90834</option></select></div>
+                </div>
+                <div class="full-width"><label>Subjective</label><textarea id="note_s" rows="2"></textarea></div>
+                <br><button class="btn" onclick="addNote()">Sign & Submit</button>
+            </div>
+            <div id="notes-history"></div>
+        </div>
+
+        <div id="schedule" class="module">
+            <div class="card" style="background: #e3f2fd; border-top: none;">
+                <h3>Book Future Appointment</h3>
+                <div class="form-grid grid-3" style="align-items: end;">
+                    <div><label>Patient Name</label><input type="text" id="appt_pt" placeholder="Search..."></div>
+                    <div><label>Assign Provider</label><select id="appt_prov"><option value="doc">Dr. Smith (MD)</option><option value="therapist_sarah">Sarah Jones (LCSW)</option></select></div>
+                    <div><label>Date</label><input type="date" id="appt_date"></div>
+                    <div><label>Time</label><input type="text" id="appt_time" placeholder="10:00 AM"></div>
+                    <div style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="appt_zoom" style="width:20px;"> <label style="margin:0;">Zoom?</label></div>
+                    <button class="btn" onclick="bookAppt()">+ Add</button>
+                </div>
+            </div>
+            
+            <div class="cal-nav">
+                <button style="border:none; background:none; font-size:1.5rem; cursor:pointer;" onclick="changeMonth(-1)">&#10094;</button>
+                <div class="cal-month-title" id="calendar-title" style="font-size:1.2rem; font-weight:bold;">October 2026</div>
+                <button style="border:none; background:none; font-size:1.5rem; cursor:pointer;" onclick="changeMonth(1)">&#10095;</button>
+            </div>
+            <div class="calendar-header"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
+            <div class="calendar-month" id="calendar-grid"></div>
+        </div>
+
+    </div>
+
+    <script>
+        // LOGIN
+        function attemptLogin() {
+            const pass = document.getElementById('password-input').value.trim();
+            if(pass.toLowerCase() === 'admin') {
+                document.getElementById('login-overlay').style.display = 'none';
+                try { initChart(); } catch(e) {}
+                renderCalendar(); 
+            } else {
+                document.getElementById('login-error').style.display = 'block';
+            }
+        }
+
+        // NAVIGATION
+        function switchTab(id, el) {
+            document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            el.classList.add('active');
+            if(id === 'pcp') { resizeCanvases(); }
+        }
+
+        function switchSubTab(id, el) {
+            // Hide all tab contents in CCA
+            document.querySelectorAll('#cca .tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('#cca .sub-tab').forEach(t => t.classList.remove('active'));
+            // Show selected
+            document.getElementById(id).classList.add('active');
+            el.classList.add('active');
+        }
+
+        // CALENDAR
+        let currentDate = new Date();
+        let appointments = [
+            { date: "2026-10-05", time: "9:00am", pt: "J. Doe", type: "doc", prov: "Dr. Smith" },
+            { date: "2026-10-05", time: "1:00pm", pt: "M. Ross", type: "therapist", prov: "Sarah Jones" }
+        ];
+
+        function changeMonth(dir) { currentDate.setMonth(currentDate.getMonth() + dir); renderCalendar(); }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            const title = document.getElementById('calendar-title');
+            grid.innerHTML = "";
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            title.innerText = `${monthNames[month]} ${year}`;
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            for(let i=0; i<firstDay; i++) { grid.appendChild(document.createElement('div')); }
+
+            for(let day=1; day<=daysInMonth; day++) {
+                let cell = document.createElement('div');
+                cell.className = 'day-cell';
+                if(day === new Date().getDate() && month === new Date().getMonth()) cell.classList.add('today');
+                cell.innerHTML = `<div class="day-number">${day}</div>`;
+
+                const mStr = (month + 1).toString().padStart(2, '0');
+                const dStr = day.toString().padStart(2, '0');
+                const dateKey = `${year}-${mStr}-${dStr}`;
+
+                appointments.forEach(appt => {
+                    if(appt.date === dateKey) {
+                        let pill = document.createElement('div');
+                        pill.className = appt.type === 'doc' ? 'appt-pill pill-doc' : 'appt-pill pill-therapist';
+                        if(appt.zoom) pill.classList.add('pill-zoom');
+                        pill.innerText = `${appt.time} ${appt.pt}`;
+                        pill.onclick = function() { appt.zoom ? startZoom() : alert(`Appt: ${appt.pt}`); };
+                        cell.appendChild(pill);
+                    }
+                });
+                grid.appendChild(cell);
+            }
+        }
+
+        function bookAppt() {
+            const pt = document.getElementById('appt_pt').value;
+            const dateVal = document.getElementById('appt_date').value;
+            const time = document.getElementById('appt_time').value;
+            const provRaw = document.getElementById('appt_prov').value;
+            const provName = document.getElementById('appt_prov').options[document.getElementById('appt_prov').selectedIndex].text;
+            const isZoom = document.getElementById('appt_zoom').checked;
+
+            if(!pt || !time || !dateVal) { alert("Missing Details"); return; }
+            let type = provRaw === "doc" ? "doc" : "therapist";
+            appointments.push({ date: dateVal, time: time, pt: pt, type: type, prov: provName, zoom: isZoom });
+            
+            alert("Appointment Saved!");
+            const parts = dateVal.split('-');
+            currentDate.setFullYear(parseInt(parts[0]));
+            currentDate.setMonth(parseInt(parts[1]) - 1);
+            renderCalendar();
+        }
+
+        function startZoom() { window.open("https://zoom.us/join", "_blank"); }
+
+        // MISC
+        function saveIntake() {
+            const first = document.getElementById('pt_first').value;
+            if(!first) return;
+            document.querySelector('.auto-name').innerText = first + " " + document.getElementById('pt_last').value;
+            document.getElementById('pt-banner').classList.add('active');
+        }
+
+        function addNote() {
+            const s = document.getElementById('note_s').value;
+            if(!s) return;
+            const html = `<div class="note-entry"><div class="note-meta">Date: ${document.getElementById('note_date').value} | SIGNED</div><p>S: ${s}</p></div>`;
+            document.getElementById('notes-history').insertAdjacentHTML('afterbegin', html);
+        }
+
+        function calcLocus() {
+            let total = 0;
+            document.querySelectorAll('.locus-in').forEach(el => total += parseInt(el.value));
+            document.getElementById('locus-score').innerText = total;
+        }
+
+        // SIGNATURES & CHART
+        const pads = {};
+        function initPads() {
+            try {
+                ['sig-pad-1', 'sig-pad-2'].forEach(id => {
+                    pads[id] = new SignaturePad(document.getElementById(id), { backgroundColor: 'rgb(255, 255, 255)' });
+                });
+            } catch(e) {}
+        }
+        function clearSig(id) { pads[id].clear(); }
+        function resizeCanvases() {
+            ['sig-pad-1', 'sig-pad-2'].forEach(id => {
+                const canvas = document.getElementById(id);
+                const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                canvas.width = canvas.offsetWidth * ratio; canvas.height = canvas.offsetHeight * ratio;
+                canvas.getContext("2d").scale(ratio, ratio);
+            });
+        }
+        
+        function initChart() {
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+                    datasets: [{ label: 'PHQ-9', data: [18, 15, 12, 8, 5], borderColor: '#2c3e50', backgroundColor: 'rgba(52, 152, 219, 0.2)', fill: true }]
+                }, options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+        
+        window.addEventListener("resize", resizeCanvases);
+        initPads();
+        document.getElementById('appt_date').valueAsDate = new Date();
+    </script>
+</body>
+</html>
